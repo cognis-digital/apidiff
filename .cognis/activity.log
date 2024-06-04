@@ -36,3 +36,4 @@
 2025-10-13T13:03:33  fix: works on my machine (TM)
 2026-02-14T08:20:40  chore: in case of fire — commit, push, leave building
 2026-03-23T15:37:47  docs: ELI5 pass
+2024-06-04T11:03:33  feat(cli): short-circuit on first critical
