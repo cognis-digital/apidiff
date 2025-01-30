@@ -49,3 +49,4 @@
 2024-12-19T09:53:43  test(cli): skip binary files by sniffing
 2024-12-21T16:10:50  ci(output): add pagination to large reports
 2025-01-09T11:27:57  fix(mcp): improve the demo scenario
+2025-01-30T18:44:04  docs(fixtures): guard against ReDoS in patterns
