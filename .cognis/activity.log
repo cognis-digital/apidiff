@@ -50,3 +50,4 @@
 2024-12-21T16:10:50  ci(output): add pagination to large reports
 2025-01-09T11:27:57  fix(mcp): improve the demo scenario
 2025-01-30T18:44:04  docs(fixtures): guard against ReDoS in patterns
+2025-02-18T13:01:11  feat: with great power comes great test coverage
