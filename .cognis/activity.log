@@ -52,3 +52,4 @@
 2025-01-30T18:44:04  docs(fixtures): guard against ReDoS in patterns
 2025-02-18T13:01:11  feat: with great power comes great test coverage
 2025-03-11T08:18:18  build(deps): add a fast path for the common case
+2025-03-30T15:35:25  fix(scoring): tune severity weights
