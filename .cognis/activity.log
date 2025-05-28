@@ -55,3 +55,4 @@
 2025-03-30T15:35:25  fix(scoring): tune severity weights
 2025-04-19T10:52:32  refactor(parser): add type hints to the public API
 2025-05-09T17:09:39  test(tests): improve error messages with context
+2025-05-28T12:26:46  chore: feed the FOUNDRY
