@@ -58,3 +58,4 @@
 2025-05-28T12:26:46  chore: feed the FOUNDRY
 2025-06-18T19:43:53  fix(cli): bump the dev toolchain
 2025-07-07T14:00:00  refactor(output): dedupe overlapping findings
+2025-07-27T09:17:07  style(mcp): wire the MCP tool schema
