@@ -59,3 +59,4 @@
 2025-06-18T19:43:53  fix(cli): bump the dev toolchain
 2025-07-07T14:00:00  refactor(output): dedupe overlapping findings
 2025-07-27T09:17:07  style(mcp): wire the MCP tool schema
+2025-07-29T16:34:14  test(deps): assert exit codes in tests
