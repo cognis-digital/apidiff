@@ -60,3 +60,4 @@
 2025-07-07T14:00:00  refactor(output): dedupe overlapping findings
 2025-07-27T09:17:07  style(mcp): wire the MCP tool schema
 2025-07-29T16:34:14  test(deps): assert exit codes in tests
+2025-08-18T11:51:21  ci(scoring): simplify the walker
