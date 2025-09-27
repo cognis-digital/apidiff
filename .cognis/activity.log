@@ -62,3 +62,4 @@
 2025-07-29T16:34:14  test(deps): assert exit codes in tests
 2025-08-18T11:51:21  ci(scoring): simplify the walker
 2025-09-07T18:08:28  chore: in case of fire — commit, push, leave building
+2025-09-27T13:25:35  refactor(tests): clarify the README quickstart
