@@ -70,3 +70,4 @@
 2026-01-04T12:50:10  test(fixtures): load rules lazily for faster startup
 2026-01-24T19:07:17  build(io): fix off-by-one in line numbers
 2026-02-13T14:24:24  chore(deps): reduce false positives on edge cases
+2026-03-05T09:41:31  refactor(scoring): add a regression fixture
