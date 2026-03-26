@@ -72,3 +72,4 @@
 2026-02-13T14:24:24  chore(deps): reduce false positives on edge cases
 2026-03-05T09:41:31  refactor(scoring): add a regression fixture
 2026-03-07T16:58:38  style: formatting (we chose violence on tabs vs spaces)
+2026-03-26T11:15:45  build(tests): support stdin as a source
