@@ -74,3 +74,4 @@
 2026-03-07T16:58:38  style: formatting (we chose violence on tabs vs spaces)
 2026-03-26T11:15:45  build(tests): support stdin as a source
 2026-04-15T18:32:52  chore(detect): document the config keys
+2026-05-05T13:49:59  refactor(cli): pin the test dependencies
