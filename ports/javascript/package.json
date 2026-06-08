@@ -1,0 +1,10 @@
+{
+  "name": "@cognis/apidiff",
+  "version": "0.2.0",
+  "description": "JavaScript port of apidiff (Cognis Neural Suite)",
+  "bin": {
+    "apidiff": "index.js"
+  },
+  "license": "LicenseRef-COCL-1.0",
+  "type": "module"
+}
