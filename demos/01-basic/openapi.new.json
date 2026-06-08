@@ -1,0 +1,45 @@
+{
+  "openapi": "3.0.3",
+  "info": { "title": "Petstore", "version": "2.0.0" },
+  "paths": {
+    "/pets": {
+      "get": {
+        "operationId": "listPets",
+        "parameters": [
+          { "name": "limit", "in": "query", "required": false,
+            "schema": { "type": "integer" } },
+          { "name": "tenant", "in": "query", "required": true,
+            "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "integer" },
+                    "name": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pets/{petId}": {
+      "get": {
+        "operationId": "getPet",
+        "responses": { "200": { "description": "ok" } }
+      }
+    },
+    "/pets/{petId}/notes": {
+      "post": {
+        "operationId": "addNote",
+        "responses": { "201": { "description": "created" } }
+      }
+    }
+  }
+}
