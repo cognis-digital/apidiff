@@ -36,9 +36,10 @@ API teams catch breaks in CI
 <a name="features"></a>
 ## Features
 
-- ✅ Todo
-- ✅ Fixme
-- ✅ Xxx
+- ✅ Detect Format
+- ✅ Diff Openapi
+- ✅ Diff Graphql
+- ✅ Diff Files
 - ✅ Runs on Linux/macOS/Windows · Docker · devcontainer
 - ✅ Ports in Python, JavaScript, Go, and Rust (`ports/`)
 
