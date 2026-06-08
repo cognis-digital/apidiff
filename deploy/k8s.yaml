@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: apidiff, labels: { app: apidiff } }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: apidiff } }
+  template:
+    metadata: { labels: { app: apidiff } }
+    spec:
+      containers:
+        - name: apidiff
+          image: ghcr.io/cognis-digital/apidiff:latest
+          ports: [{ containerPort: 8000 }]
+          resources:
+            requests: { cpu: "50m", memory: "64Mi" }
+            limits: { cpu: "500m", memory: "256Mi" }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: apidiff }
+spec:
+  selector: { app: apidiff }
+  ports: [{ port: 80, targetPort: 8000 }]
