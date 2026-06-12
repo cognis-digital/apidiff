@@ -11,7 +11,6 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from apidiff import (  # noqa: E402
     TOOL_NAME,
     TOOL_VERSION,
-    Severity,
     detect_format,
     diff_files,
     diff_graphql,

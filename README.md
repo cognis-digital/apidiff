@@ -16,7 +16,7 @@
 </div>
 
 ```bash
-pip install cognis-apidiff
+pip install "git+https://github.com/cognis-digital/apidiff.git"
 apidiff scan .            # → prioritized findings in seconds
 ```
 
@@ -49,7 +49,7 @@ API teams catch breaks in CI
 ## Quick start
 
 ```bash
-pip install cognis-apidiff
+pip install "git+https://github.com/cognis-digital/apidiff.git"
 apidiff --version
 apidiff scan .                       # scan current project
 apidiff scan . --format json         # machine-readable
