@@ -16,9 +16,15 @@
 </div>
 
 ```bash
-pip install cognis-apidiff
+pip install "git+https://github.com/cognis-digital/apidiff.git"
 apidiff scan .            # → prioritized findings in seconds
 ```
+
+<!-- cognis:layman:start -->
+## What is this?
+
+apidiff is a command-line tool that compares two versions of an API definition and tells you which changes would break apps or clients that already depend on it. You point it at your old and new API files, and it outputs a clear list of breaking changes — like a removed endpoint or a new required field — so your team knows before deploying. It supports OpenAPI (the format behind REST APIs) and GraphQL, detects the format automatically, and fits into CI pipelines with standard exit codes and JSON output. It is aimed at backend developers and API teams who want a fast, no-account-required check before shipping API changes.
+<!-- cognis:layman:end -->
 
 ## Contents
 
@@ -46,10 +52,56 @@ API teams catch breaks in CI
 <div align="right"><a href="#top">↑ back to top</a></div>
 
 <a name="quick-start"></a>
+<!-- cognis:domains:start -->
+## Domains
+
+**Primary domain:** Cloud & DevTools  ·  **JTF MERIDIAN division:** ATHENA-PRIME · COGNI-2
+
+**Topics:** `cognis` `devtools` `cloud` `developer-tools`
+
+Part of the **Cognis Neural Suite** — 300+ source-available tools organized across 12 domains under the JTF MERIDIAN command structure. See the [suite on GitHub](https://github.com/cognis-digital) and [jtf-meridian](https://github.com/cognis-digital/jtf-meridian) for how the pieces fit together.
+<!-- cognis:domains:end -->
+
+<!-- cognis:install:start -->
+## Install
+
+`apidiff` is source-available (not published to PyPI) — every method below installs
+straight from GitHub. Pick whichever you prefer; the one-line scripts auto-detect
+the best tool available on your machine.
+
+**One-liner (Linux / macOS):**
+```sh
+curl -fsSL https://raw.githubusercontent.com/cognis-digital/apidiff/HEAD/install.sh | sh
+```
+
+**One-liner (Windows PowerShell):**
+```powershell
+irm https://raw.githubusercontent.com/cognis-digital/apidiff/HEAD/install.ps1 | iex
+```
+
+**Or install manually — any one of:**
+```sh
+pipx install "git+https://github.com/cognis-digital/apidiff.git"     # isolated (recommended)
+uv tool install "git+https://github.com/cognis-digital/apidiff.git"  # uv
+pip install "git+https://github.com/cognis-digital/apidiff.git"      # pip
+```
+
+**From source:**
+```sh
+git clone https://github.com/cognis-digital/apidiff.git
+cd apidiff && pip install .
+```
+
+Then run:
+```sh
+apidiff --help
+```
+<!-- cognis:install:end -->
+
 ## Quick start
 
 ```bash
-pip install cognis-apidiff
+pip install "git+https://github.com/cognis-digital/apidiff.git"
 apidiff --version
 apidiff scan .                       # scan current project
 apidiff scan . --format json         # machine-readable
