@@ -68,7 +68,7 @@ class TestOpenAPI(unittest.TestCase):
     def test_response_property_removal_is_breaking(self):
         old = ('{"openapi":"3.0.0","paths":{"/a":{"get":{"responses":{"200":'
                '{"content":{"application/json":{"schema":{"properties":'
-               '{"x":{"type":"string"}}}}}}}}}}')
+               '{"x":{"type":"string"}}}}}}}}}}}')
         new = ('{"openapi":"3.0.0","paths":{"/a":{"get":{"responses":{"200":'
                '{"content":{"application/json":{"schema":{"properties":{}}}}}}}}}}')
         res = diff_openapi(old, new)
