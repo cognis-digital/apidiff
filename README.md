@@ -20,6 +20,31 @@ pip install cognis-apidiff
 apidiff scan .            # → prioritized findings in seconds
 ```
 
+## Usage — step by step
+
+`apidiff` detects breaking changes between two OpenAPI / GraphQL definitions.
+
+1. **Install**:
+   ```bash
+   pip install -e .
+   ```
+2. **Diff a baseline against a candidate** definition:
+   ```bash
+   apidiff diff openapi.old.yaml openapi.new.yaml
+   ```
+3. **Force the format** when auto-detection is ambiguous:
+   ```bash
+   apidiff diff schema.old.graphql schema.new.graphql --fmt graphql
+   ```
+4. **Read the output** as JSON for tooling:
+   ```bash
+   apidiff diff openapi.old.yaml openapi.new.yaml --format json
+   ```
+5. **Automate in CI** — `--fail-on` controls when the diff returns a non-zero exit:
+   ```bash
+   apidiff diff openapi.old.yaml openapi.new.yaml --fail-on breaking
+   ```
+
 ## Contents
 
 - [Why apidiff?](#why) · [Features](#features) · [Quick start](#quick-start) · [Example](#example) · [Architecture](#architecture) · [AI stack](#ai-stack) · [How it compares](#how-it-compares) · [Integrations](#integrations) · [Install anywhere](#install-anywhere) · [Related](#related) · [Contributing](#contributing)
