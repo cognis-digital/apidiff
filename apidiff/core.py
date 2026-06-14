@@ -294,7 +294,6 @@ def _parse_graphql(text: str) -> Dict[str, GQLType]:
     text = re.sub(r"#[^\n]*", "", text)
     types: Dict[str, GQLType] = {}
 
-    i = 0
     for m in _TYPE_HEADER.finditer(text):
         kind, name = m.group(1), m.group(2)
         if kind == "union":
@@ -468,10 +467,20 @@ def _type_change_severity(old_type: str, new_type: str, is_input: bool) -> Sever
 # --------------------------------------------------------------------------
 def diff_files(old_text: str, new_text: str,
                fmt: Optional[str] = None) -> DiffResult:
+    if not isinstance(old_text, str):
+        raise ValueError(f"old_text must be a str, got {type(old_text).__name__}")
+    if not isinstance(new_text, str):
+        raise ValueError(f"new_text must be a str, got {type(new_text).__name__}")
+    if not old_text.strip():
+        raise ValueError("old_text is empty; expected an OpenAPI or GraphQL document")
+    if not new_text.strip():
+        raise ValueError("new_text is empty; expected an OpenAPI or GraphQL document")
     if fmt in (None, "auto"):
         fmt = detect_format(new_text)
     if fmt == "openapi":
         return diff_openapi(old_text, new_text)
     if fmt == "graphql":
         return diff_graphql(old_text, new_text)
-    raise ValueError(f"Unknown format: {fmt}")
+    raise ValueError(
+        f"Unknown format '{fmt}'; expected one of: auto, openapi, graphql"
+    )

@@ -90,7 +90,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     try:
         old_text = _read(args.old)
         new_text = _read(args.new)
-    except OSError as e:
+    except (OSError, UnicodeDecodeError) as e:
         print(f"error: {e}", file=sys.stderr)
         return 2
 

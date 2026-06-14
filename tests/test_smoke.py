@@ -166,6 +166,83 @@ class TestCLI(unittest.TestCase):
             code = main([])
         self.assertEqual(code, 2)
 
+    def test_cli_missing_file_exit_2(self):
+        """Non-existent input files must produce exit code 2 and a stderr message."""
+        err_buf = io.StringIO()
+        old_stderr = sys.stderr
+        sys.stderr = err_buf
+        try:
+            code = main(["diff", "/no/such/old.json", "/no/such/new.json"])
+        finally:
+            sys.stderr = old_stderr
+        self.assertEqual(code, 2)
+        self.assertIn("error:", err_buf.getvalue())
+
+    def test_cli_malformed_json_exit_2(self):
+        """Malformed JSON input must produce exit code 2 and a clear stderr message."""
+        import tempfile
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".json", delete=False, encoding="utf-8"
+        ) as f_old:
+            f_old.write('{"openapi": "3.0.0", "paths": {"/a": {"get": {}}}}')
+            old_path = f_old.name
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".json", delete=False, encoding="utf-8"
+        ) as f_new:
+            f_new.write("not valid json }{")
+            new_path = f_new.name
+        try:
+            err_buf = io.StringIO()
+            old_stderr = sys.stderr
+            sys.stderr = err_buf
+            try:
+                code = main(["diff", old_path, new_path, "--fmt", "openapi"])
+            finally:
+                sys.stderr = old_stderr
+            self.assertEqual(code, 2)
+            self.assertIn("error:", err_buf.getvalue())
+        finally:
+            os.unlink(old_path)
+            os.unlink(new_path)
+
+
+class TestHardeningEdgeCases(unittest.TestCase):
+    """Verify hardened error paths in core.py."""
+
+    def test_diff_files_empty_old_raises(self):
+        """Empty old_text must raise ValueError, not a cryptic JSONDecodeError."""
+        with self.assertRaises(ValueError) as ctx:
+            diff_files("", '{"openapi":"3.0.0","paths":{}}', fmt="openapi")
+        self.assertIn("empty", str(ctx.exception).lower())
+
+    def test_diff_files_empty_new_raises(self):
+        """Empty new_text must raise ValueError."""
+        with self.assertRaises(ValueError) as ctx:
+            diff_files('{"openapi":"3.0.0","paths":{}}', "   ", fmt="openapi")
+        self.assertIn("empty", str(ctx.exception).lower())
+
+    def test_diff_files_non_string_raises(self):
+        """Non-string inputs must raise ValueError with a type hint."""
+        with self.assertRaises(ValueError) as ctx:
+            diff_files(None, '{"openapi":"3.0.0"}', fmt="openapi")
+        self.assertIn("str", str(ctx.exception))
+
+    def test_diff_files_unknown_fmt_raises(self):
+        """Unknown fmt value must raise ValueError naming the bad value."""
+        with self.assertRaises(ValueError) as ctx:
+            diff_files(
+                '{"openapi":"3.0.0","paths":{}}',
+                '{"openapi":"3.0.0","paths":{}}',
+                fmt="yaml",
+            )
+        self.assertIn("yaml", str(ctx.exception))
+
+    def test_mcp_server_importable(self):
+        """mcp_server must import without errors (no missing-name ImportError)."""
+        import importlib
+        mod = importlib.import_module("apidiff.mcp_server")
+        self.assertTrue(callable(getattr(mod, "serve", None)))
+
 
 if __name__ == "__main__":
     unittest.main()
