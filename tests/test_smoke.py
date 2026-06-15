@@ -67,11 +67,12 @@ class TestOpenAPI(unittest.TestCase):
         self.assertFalse(res.has_breaking())
 
     def test_response_property_removal_is_breaking(self):
-        old = ('{"openapi":"3.0.0","paths":{"/a":{"get":{"responses":{"200":'
-               '{"content":{"application/json":{"schema":{"properties":'
-               '{"x":{"type":"string"}}}}}}}}}}')
-        new = ('{"openapi":"3.0.0","paths":{"/a":{"get":{"responses":{"200":'
-               '{"content":{"application/json":{"schema":{"properties":{}}}}}}}}}}')
+        def _spec(props):
+            return json.dumps({"openapi": "3.0.0", "paths": {"/a": {"get": {"responses":
+                {"200": {"content": {"application/json": {"schema":
+                    {"properties": props}}}}}}}}})
+        old = _spec({"x": {"type": "string"}})
+        new = _spec({})
         res = diff_openapi(old, new)
         self.assertTrue(any(c.code == "response.property.removed" for c in res.breaking))
 
