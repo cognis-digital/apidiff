@@ -47,7 +47,7 @@ apidiff scan .            # → prioritized findings in seconds
 
 ## Contents
 
-- [Why apidiff?](#why) · [Features](#features) · [Quick start](#quick-start) · [Example](#example) · [Architecture](#architecture) · [AI stack](#ai-stack) · [How it compares](#how-it-compares) · [Integrations](#integrations) · [Install anywhere](#install-anywhere) · [Related](#related) · [Contributing](#contributing)
+- [Why apidiff?](#why) · [Features](#features) · [Quick start](#quick-start) · [Example](#example) · [Demos](#demos) · [Architecture](#architecture) · [AI stack](#ai-stack) · [How it compares](#how-it-compares) · [Integrations](#integrations) · [Install anywhere](#install-anywhere) · [Related](#related) · [Contributing](#contributing)
 
 <a name="why"></a>
 ## Why apidiff?
@@ -61,10 +61,11 @@ API teams catch breaks in CI
 <a name="features"></a>
 ## Features
 
-- ✅ Detect Format
-- ✅ Diff Openapi
-- ✅ Diff Graphql
-- ✅ Diff Files
+- ✅ Detects breaking changes in **OpenAPI 3.x** (JSON) and **GraphQL SDL**
+- ✅ Severity model: **BREAKING / WARNING / INFO** with stable change codes
+- ✅ Output as **table · JSON · SARIF 2.1.0** (GitHub code scanning)
+- ✅ CI gate via exit codes + `--fail-on breaking|warning|never`
+- ✅ Zero runtime dependencies (stdlib only)
 - ✅ Runs on Linux/macOS/Windows · Docker · devcontainer
 - ✅ Ports in Python, JavaScript, Go, and Rust (`ports/`)
 
@@ -76,9 +77,10 @@ API teams catch breaks in CI
 ```bash
 pip install cognis-apidiff
 apidiff --version
-apidiff scan .                       # scan current project
-apidiff scan . --format json         # machine-readable
-apidiff scan . --fail-on high        # CI gate (non-zero exit)
+apidiff diff openapi.old.json openapi.new.json                  # human table
+apidiff diff openapi.old.json openapi.new.json --format json    # machine-readable
+apidiff diff openapi.old.json openapi.new.json --format sarif   # code-scanning
+apidiff diff openapi.old.json openapi.new.json --fail-on breaking  # CI gate
 ```
 
 <div align="right"><a href="#top">↑ back to top</a></div>
@@ -87,11 +89,46 @@ apidiff scan . --fail-on high        # CI gate (non-zero exit)
 ## Example
 
 ```text
-$ apidiff scan .
-  [HIGH    ] API-001  example finding             (./src/app.py)
-  [MEDIUM  ] API-002  another signal              (./config.yaml)
+$ apidiff diff demos/01-basic/openapi.old.json demos/01-basic/openapi.new.json
+format: openapi
+changes: 4  breaking: 3  warning: 0  info: 1
 
-  2 findings · risk score 5 · 38ms
+  [BREAKING] GET /pets             New required parameter 'tenant' (in: query) added
+  [BREAKING] GET /pets             response property 'tag' was removed
+  [BREAKING] DELETE /pets/{petId}  Operation 'DELETE /pets/{petId}' was removed
+  [INFO    ] /pets/{petId}/notes   Path '/pets/{petId}/notes' was added
+```
+
+The process exits **1** when breaking changes are found, so the CI step fails
+before the change ships.
+
+<div align="right"><a href="#top">↑ back to top</a></div>
+
+<a name="demos"></a>
+## Demos — real-world scenarios
+
+Each folder under [`demos/`](demos/) is a self-contained, runnable scenario: a
+baseline + candidate definition in apidiff's real input format, plus a
+`SCENARIO.md` describing where the data came from, what to expect, the exact
+command, and how to act. Every demo is verified by the test suite.
+
+| Demo | Format | What it shows |
+|---|---|---|
+| [`01-basic`](demos/01-basic) | OpenAPI | Removed op + new required param + dropped response field |
+| [`02-graphql-schema`](demos/02-graphql-schema) | GraphQL | Field removals across a release |
+| [`03-safe-evolution`](demos/03-safe-evolution) | OpenAPI | Purely additive release → green build (exit 0) |
+| [`04-graphql-required-input`](demos/04-graphql-required-input) | GraphQL | New required input field & argument |
+| [`05-response-shape-change`](demos/05-response-shape-change) | OpenAPI | Response property type change + dropped field |
+| [`06-status-code-dropped`](demos/06-status-code-dropped) | OpenAPI | Removed `206` + removed query param (mixed severity) |
+| [`07-sarif-codescanning`](demos/07-sarif-codescanning) | OpenAPI | `--format sarif` for GitHub code scanning |
+| [`08-graphql-enum-and-args`](demos/08-graphql-enum-and-args) | GraphQL | Enum churn + argument made required |
+| [`09-request-body-tightening`](demos/09-request-body-tightening) | OpenAPI | Request-body field becomes required |
+| [`10-multitenant-rollout`](demos/10-multitenant-rollout) | OpenAPI | Big mixed PR: breaking + additive across many paths |
+
+```bash
+# run any demo
+python -m apidiff diff demos/02-graphql-schema/schema.old.graphql \
+                       demos/02-graphql-schema/schema.new.graphql
 ```
 
 <div align="right"><a href="#top">↑ back to top</a></div>

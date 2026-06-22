@@ -1,0 +1,23 @@
+# Public GraphQL API for a blogging platform — release v4 (candidate)
+type Query {
+  post(id: ID!): Post
+  posts(first: Int, after: String): [Post!]!
+  author(id: ID!): Author
+}
+
+type Post {
+  id: ID!
+  title: String!
+  body: String!
+  # slug was removed — BREAKING: clients selecting `slug` will error
+  publishedAt: String
+  author: Author!
+  readingMinutes: Int   # additive — safe
+}
+
+type Author {
+  id: ID!
+  name: String!
+  # email was removed — BREAKING
+  bio: String
+}

@@ -1,0 +1,15 @@
+# Checkout mutation API
+input CheckoutInput {
+  cartId: ID!
+  couponCode: String
+}
+
+type Mutation {
+  checkout(input: CheckoutInput!): Order
+  cancelOrder(orderId: ID!): Boolean
+}
+
+type Order {
+  id: ID!
+  status: String!
+}

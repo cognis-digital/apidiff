@@ -1,0 +1,19 @@
+# Notifications GraphQL API — candidate
+enum Channel {
+  EMAIL
+  SMS
+  PUSH
+  # WEBHOOK removed — BREAKING: queries/variables using WEBHOOK now invalid
+  SLACK
+}
+
+type Query {
+  # limit changed Int -> Int! (now required) — BREAKING
+  notifications(channel: Channel, limit: Int!): [Notification!]!
+}
+
+type Notification {
+  id: ID!
+  channel: Channel!
+  sentAt: String!
+}

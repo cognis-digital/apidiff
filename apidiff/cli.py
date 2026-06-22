@@ -61,8 +61,9 @@ def build_parser() -> argparse.ArgumentParser:
     d = sub.add_parser("diff", help="Diff two API definitions")
     d.add_argument("old", help="Path to the OLD (baseline) API definition")
     d.add_argument("new", help="Path to the NEW (candidate) API definition")
-    d.add_argument("--format", choices=("table", "json"), default="table",
-                   help="Output format (default: table)")
+    d.add_argument("--format", choices=("table", "json", "sarif"),
+                   default="table",
+                   help="Output format: table | json | sarif (default: table)")
     d.add_argument("--fmt", choices=("auto", "openapi", "graphql"),
                    default="auto", help="Input API format (default: auto-detect)")
     d.add_argument("--fail-on", choices=("breaking", "warning", "never"),
@@ -102,6 +103,9 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     if args.format == "json":
         print(json.dumps(result.to_dict(), indent=2))
+    elif args.format == "sarif":
+        print(json.dumps(
+            result.to_sarif(TOOL_NAME, TOOL_VERSION), indent=2))
     else:
         print(_render_table(result))
 

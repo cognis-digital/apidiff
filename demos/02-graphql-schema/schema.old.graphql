@@ -1,0 +1,22 @@
+# Public GraphQL API for a blogging platform — release v3
+type Query {
+  post(id: ID!): Post
+  posts(first: Int, after: String): [Post!]!
+  author(id: ID!): Author
+}
+
+type Post {
+  id: ID!
+  title: String!
+  body: String!
+  slug: String!
+  publishedAt: String
+  author: Author!
+}
+
+type Author {
+  id: ID!
+  name: String!
+  email: String
+  bio: String
+}

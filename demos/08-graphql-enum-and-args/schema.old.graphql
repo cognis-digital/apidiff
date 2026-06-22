@@ -1,0 +1,17 @@
+# Notifications GraphQL API
+enum Channel {
+  EMAIL
+  SMS
+  PUSH
+  WEBHOOK
+}
+
+type Query {
+  notifications(channel: Channel, limit: Int): [Notification!]!
+}
+
+type Notification {
+  id: ID!
+  channel: Channel!
+  sentAt: String!
+}

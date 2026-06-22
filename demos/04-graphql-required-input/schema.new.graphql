@@ -1,0 +1,18 @@
+# Checkout mutation API — candidate
+input CheckoutInput {
+  cartId: ID!
+  couponCode: String
+  # New REQUIRED field — BREAKING: existing callers don't send idempotencyKey
+  idempotencyKey: String!
+}
+
+type Mutation {
+  checkout(input: CheckoutInput!): Order
+  # New REQUIRED argument `reason` — BREAKING for existing callers
+  cancelOrder(orderId: ID!, reason: String!): Boolean
+}
+
+type Order {
+  id: ID!
+  status: String!
+}

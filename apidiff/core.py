@@ -71,6 +71,67 @@ class DiffResult:
             "changes": [c.to_dict() for c in self.changes],
         }
 
+    def to_sarif(self, tool_name: str = "apidiff",
+                 tool_version: str = "0.0.0") -> Dict[str, Any]:
+        """Render the diff as a SARIF 2.1.0 log for code-scanning ingestion.
+
+        Each distinct change ``code`` becomes a reporting *rule*; each change
+        becomes a *result*. Severities map to SARIF levels:
+        BREAKING -> error, WARNING -> warning, INFO -> note.
+        """
+        level_for = {
+            Severity.BREAKING: "error",
+            Severity.WARNING: "warning",
+            Severity.INFO: "note",
+        }
+        # Stable rule catalogue, ordered by first appearance.
+        rules: List[Dict[str, Any]] = []
+        rule_index: Dict[str, int] = {}
+        for c in self.changes:
+            if c.code not in rule_index:
+                rule_index[c.code] = len(rules)
+                rules.append({
+                    "id": c.code,
+                    "name": c.code,
+                    "shortDescription": {"text": c.code},
+                    "defaultConfiguration": {"level": level_for[c.severity]},
+                })
+
+        results: List[Dict[str, Any]] = []
+        for c in self.changes:
+            results.append({
+                "ruleId": c.code,
+                "ruleIndex": rule_index[c.code],
+                "level": level_for[c.severity],
+                "message": {"text": c.message},
+                "locations": [{
+                    "logicalLocations": [{
+                        "name": c.location,
+                        "kind": self.api_format,
+                    }],
+                }],
+                "properties": {
+                    "severity": c.severity.value,
+                    "apiFormat": self.api_format,
+                },
+            })
+
+        return {
+            "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+            "version": "2.1.0",
+            "runs": [{
+                "tool": {
+                    "driver": {
+                        "name": tool_name,
+                        "version": tool_version,
+                        "informationUri": "https://github.com/cognis-digital/apidiff",
+                        "rules": rules,
+                    }
+                },
+                "results": results,
+            }],
+        }
+
 
 # --------------------------------------------------------------------------
 # Format detection

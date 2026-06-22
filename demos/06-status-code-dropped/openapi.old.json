@@ -1,0 +1,21 @@
+{
+  "openapi": "3.0.3",
+  "info": { "title": "Search API", "version": "1.0.0" },
+  "paths": {
+    "/search": {
+      "get": {
+        "operationId": "search",
+        "parameters": [
+          { "name": "q", "in": "query", "required": true,
+            "schema": { "type": "string" } },
+          { "name": "lang", "in": "query", "required": false,
+            "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "results" },
+          "206": { "description": "partial content (streamed)" }
+        }
+      }
+    }
+  }
+}

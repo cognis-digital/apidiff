@@ -1,0 +1,32 @@
+{
+  "openapi": "3.0.3",
+  "info": { "title": "Accounts API", "version": "4.2.0" },
+  "paths": {
+    "/v1/accounts/{id}": {
+      "get": {
+        "operationId": "getAccount",
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "string" },
+                    "balance": { "type": "number" },
+                    "legacyToken": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "closeAccount",
+        "responses": { "204": { "description": "closed" } }
+      }
+    }
+  }
+}

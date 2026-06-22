@@ -1,0 +1,28 @@
+{
+  "openapi": "3.0.3",
+  "info": { "title": "Billing API", "version": "2.2.0" },
+  "paths": {
+    "/invoices/{invoiceId}": {
+      "get": {
+        "operationId": "getInvoice",
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "string" },
+                    "amountCents": { "type": "string" },
+                    "paid": { "type": "boolean" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

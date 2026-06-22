@@ -1,0 +1,36 @@
+{
+  "openapi": "3.0.3",
+  "info": { "title": "Reports API", "version": "4.0.0" },
+  "paths": {
+    "/reports": {
+      "get": {
+        "operationId": "listReports",
+        "parameters": [
+          { "name": "from", "in": "query", "required": false,
+            "schema": { "type": "string" } },
+          { "name": "to", "in": "query", "required": false,
+            "schema": { "type": "string" } },
+          { "name": "tenantId", "in": "header", "required": true,
+            "schema": { "type": "string" } }
+        ],
+        "responses": { "200": { "description": "ok" } }
+      }
+    },
+    "/reports/{id}/export": {
+      "get": {
+        "operationId": "exportReport",
+        "parameters": [
+          { "name": "format", "in": "query", "required": false,
+            "schema": { "type": "string" } }
+        ],
+        "responses": { "200": { "description": "ok" } }
+      }
+    },
+    "/reports/{id}/schedule": {
+      "post": {
+        "operationId": "scheduleReport",
+        "responses": { "201": { "description": "scheduled" } }
+      }
+    }
+  }
+}

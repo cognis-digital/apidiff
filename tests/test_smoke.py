@@ -135,6 +135,92 @@ class TestDispatchAndDemo(unittest.TestCase):
         self.assertIn("response.property.removed", codes)
 
 
+class TestSarif(unittest.TestCase):
+    def _result(self):
+        with open(os.path.join(DEMO, "openapi.old.json")) as f:
+            old = f.read()
+        with open(os.path.join(DEMO, "openapi.new.json")) as f:
+            new = f.read()
+        return diff_files(old, new)
+
+    def test_sarif_structure(self):
+        sarif = self._result().to_sarif("apidiff", "9.9.9")
+        self.assertEqual(sarif["version"], "2.1.0")
+        run = sarif["runs"][0]
+        driver = run["tool"]["driver"]
+        self.assertEqual(driver["name"], "apidiff")
+        self.assertEqual(driver["version"], "9.9.9")
+        # every result references a rule that exists in the catalogue
+        rule_ids = {r["id"] for r in driver["rules"]}
+        self.assertTrue(rule_ids)
+        for res in run["results"]:
+            self.assertIn(res["ruleId"], rule_ids)
+            self.assertEqual(
+                driver["rules"][res["ruleIndex"]]["id"], res["ruleId"])
+
+    def test_sarif_levels_map_from_severity(self):
+        sarif = self._result().to_sarif()
+        levels = {r["level"] for r in sarif["runs"][0]["results"]}
+        # demo 01 has breaking changes -> at least one 'error'
+        self.assertIn("error", levels)
+        self.assertTrue(levels <= {"error", "warning", "note"})
+
+    def test_sarif_empty_diff(self):
+        res = diff_files(
+            '{"openapi":"3.0.0","paths":{}}',
+            '{"openapi":"3.0.0","paths":{}}')
+        sarif = res.to_sarif()
+        self.assertEqual(sarif["runs"][0]["results"], [])
+        self.assertEqual(sarif["runs"][0]["tool"]["driver"]["rules"], [])
+
+
+DEMOS_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "demos")
+
+
+class TestAllDemos(unittest.TestCase):
+    # demo dir -> expected (has_breaking, min total changes)
+    EXPECTATIONS = {
+        "01-basic": (True, 4),
+        "02-graphql-schema": (True, 3),
+        "03-safe-evolution": (False, 3),
+        "04-graphql-required-input": (True, 2),
+        "05-response-shape-change": (True, 2),
+        "06-status-code-dropped": (True, 2),
+        "07-sarif-codescanning": (True, 3),
+        "08-graphql-enum-and-args": (True, 3),
+        "09-request-body-tightening": (True, 1),
+        "10-multitenant-rollout": (True, 4),
+    }
+
+    def _pair(self, demo):
+        d = os.path.join(DEMOS_DIR, demo)
+        olds = [f for f in os.listdir(d) if ".old." in f]
+        news = [f for f in os.listdir(d) if ".new." in f]
+        self.assertEqual(len(olds), 1, f"{demo}: one .old.* file expected")
+        self.assertEqual(len(news), 1, f"{demo}: one .new.* file expected")
+        with open(os.path.join(d, olds[0]), encoding="utf-8") as f:
+            old = f.read()
+        with open(os.path.join(d, news[0]), encoding="utf-8") as f:
+            new = f.read()
+        return old, new
+
+    def test_every_demo_fires_as_documented(self):
+        for demo, (should_break, min_total) in self.EXPECTATIONS.items():
+            with self.subTest(demo=demo):
+                old, new = self._pair(demo)
+                res = diff_files(old, new)
+                self.assertEqual(
+                    res.has_breaking(), should_break,
+                    f"{demo}: breaking expectation mismatch")
+                self.assertGreaterEqual(
+                    len(res.changes), min_total,
+                    f"{demo}: expected >= {min_total} changes")
+                # SCENARIO.md must exist for every demo
+                self.assertTrue(os.path.exists(
+                    os.path.join(DEMOS_DIR, demo, "SCENARIO.md")))
+
+
 class TestCLI(unittest.TestCase):
     def test_cli_json_and_exit_code(self):
         old = os.path.join(DEMO, "openapi.old.json")
@@ -161,6 +247,17 @@ class TestCLI(unittest.TestCase):
         with redirect_stdout(buf):
             code = main(["diff", old, new, "--fail-on", "never"])
         self.assertEqual(code, 0)
+
+    def test_cli_sarif_output(self):
+        old = os.path.join(DEMO, "openapi.old.json")
+        new = os.path.join(DEMO, "openapi.new.json")
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            code = main(["diff", old, new, "--format", "sarif"])
+        self.assertEqual(code, 1)
+        payload = json.loads(buf.getvalue())
+        self.assertEqual(payload["version"], "2.1.0")
+        self.assertTrue(payload["runs"][0]["results"])
 
     def test_cli_missing_command_usage_error(self):
         buf = io.StringIO()
