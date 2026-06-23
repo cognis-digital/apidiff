@@ -1,0 +1,81 @@
+name: ports
+on:
+  push:
+    paths:
+      - "ports/**"
+      - ".github/workflows/ports.yml"
+  pull_request:
+    paths:
+      - "ports/**"
+      - ".github/workflows/ports.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  node:
+    name: JavaScript / Node port
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Test (built-in node:test)
+        run: node --test ports/javascript/test.js
+      - name: Smoke — diff a breaking demo (expect exit 1)
+        run: |
+          set +e
+          node ports/javascript/index.js diff \
+            demos/01-basic/openapi.old.json demos/01-basic/openapi.new.json --format json
+          code=$?
+          test "$code" -eq 1 || { echo "expected exit 1, got $code"; exit 1; }
+      - name: Smoke — identical files (expect exit 0)
+        run: |
+          node ports/javascript/index.js diff \
+            demos/01-basic/openapi.old.json demos/01-basic/openapi.old.json
+
+  go:
+    name: Go port
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.21"
+      - name: Vet
+        working-directory: ports/go
+        run: go vet ./...
+      - name: Test
+        working-directory: ports/go
+        run: go test -v ./...
+      - name: Build
+        working-directory: ports/go
+        run: go build -o apidiff-go .
+      - name: Smoke — diff a breaking demo (expect exit 1)
+        run: |
+          set +e
+          ports/go/apidiff-go diff \
+            demos/01-basic/openapi.old.json demos/01-basic/openapi.new.json --format json
+          code=$?
+          test "$code" -eq 1 || { echo "expected exit 1, got $code"; exit 1; }
+
+  rust:
+    name: Rust port
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test
+        working-directory: ports/rust
+        run: cargo test
+      - name: Build (release)
+        working-directory: ports/rust
+        run: cargo build --release
+      - name: Smoke — diff a breaking demo (expect exit 1)
+        run: |
+          set +e
+          ports/rust/target/release/apidiff diff \
+            demos/01-basic/openapi.old.json demos/01-basic/openapi.new.json --format json
+          code=$?
+          test "$code" -eq 1 || { echo "expected exit 1, got $code"; exit 1; }

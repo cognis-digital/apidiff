@@ -26,13 +26,16 @@ This guide lists the supported integration surfaces. Where a surface is marked
 
 ```bash
 # CI gate (GitHub Actions, GitLab CI, Jenkins, etc.)
-<tool> scan . --format sarif --out results.sarif --fail-on high
+apidiff diff openapi.base.json openapi.json --format sarif --fail-on breaking > results.sarif
 
 # Stream findings to a webhook / SIEM forwarder
-<tool> scan . --format json | python integrations/webhook.py --url "$COGNIS_WEBHOOK_URL"
+apidiff diff openapi.base.json openapi.json --format json | python integrations/webhook.py --url "$COGNIS_WEBHOOK_URL"
+
+# Forward via cognis-connect (STIX / MISP / Sigma / Splunk / Elastic / Slack)
+apidiff diff openapi.base.json openapi.json --format json | apidiff-emit --to sigma
 
 # Use from an AI agent over MCP
-<tool> mcp
+apidiff mcp
 ```
 
 ## Configuration

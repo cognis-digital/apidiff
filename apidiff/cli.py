@@ -1,7 +1,9 @@
 """Command-line interface for APIDIFF.
 
 Usage:
-    apidiff diff OLD NEW [--format table|json] [--fmt auto|openapi|graphql]
+    apidiff diff OLD NEW [--format table|json|sarif] [--fmt auto|openapi|graphql]
+                         [--fail-on breaking|warning|never]
+    apidiff mcp          # run the MCP stdio server (needs the 'mcp' extra)
     apidiff --version
 
 Exit codes:
@@ -69,6 +71,10 @@ def build_parser() -> argparse.ArgumentParser:
     d.add_argument("--fail-on", choices=("breaking", "warning", "never"),
                    default="breaking",
                    help="Severity threshold that yields a non-zero exit")
+
+    sub.add_parser(
+        "mcp",
+        help="Run the MCP stdio server (requires the 'mcp' extra)")
     return parser
 
 
@@ -83,6 +89,10 @@ def _exit_code(result: DiffResult, fail_on: str) -> int:
 def main(argv: Optional[List[str]] = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
+
+    if args.command == "mcp":
+        from .mcp_server import serve
+        return serve()
 
     if args.command != "diff":
         parser.print_help()

@@ -12,10 +12,36 @@ etc.).
 from __future__ import annotations
 
 import json
+import os
 import re
 from dataclasses import dataclass, field, asdict
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
+
+# --------------------------------------------------------------------------
+# Tool identity (single source of truth; mirrored by apidiff.__init__)
+# --------------------------------------------------------------------------
+TOOL_NAME = "apidiff"
+
+
+def _read_version() -> str:
+    """Read the VERSION file shipped beside the package; fall back gracefully."""
+    here = os.path.dirname(os.path.abspath(__file__))
+    for candidate in (
+        os.path.join(here, "..", "VERSION"),
+        os.path.join(here, "VERSION"),
+    ):
+        try:
+            with open(candidate, "r", encoding="utf-8") as fh:
+                v = fh.read().strip()
+                if v:
+                    return v
+        except OSError:
+            continue
+    return "0.5.0"
+
+
+TOOL_VERSION = _read_version()
 
 
 class Severity(str, Enum):
@@ -536,3 +562,32 @@ def diff_files(old_text: str, new_text: str,
     if fmt == "graphql":
         return diff_graphql(old_text, new_text)
     raise ValueError(f"Unknown format: {fmt}")
+
+
+# --------------------------------------------------------------------------
+# Convenience API (used by the MCP server and embedders)
+# --------------------------------------------------------------------------
+def diff_paths(old_path: str, new_path: str,
+               fmt: Optional[str] = None) -> DiffResult:
+    """Read two files from disk and diff them. Passive, read-only, offline."""
+    with open(old_path, "r", encoding="utf-8") as fh:
+        old_text = fh.read()
+    with open(new_path, "r", encoding="utf-8") as fh:
+        new_text = fh.read()
+    return diff_files(old_text, new_text, fmt=fmt)
+
+
+def scan(old_path: str, new_path: str,
+         fmt: Optional[str] = None) -> Dict[str, Any]:
+    """High-level helper: diff two API definition files, return the result dict.
+
+    This is the embedding-friendly entry point (MCP, agents, scripts). It is
+    purely local and read-only — it opens two files and compares them. It never
+    touches the network and performs no active scanning of any kind.
+    """
+    return diff_paths(old_path, new_path, fmt=fmt).to_dict()
+
+
+def to_json(obj: Any, indent: int = 2) -> str:
+    """Serialize a result (or any JSON-able object) to a stable JSON string."""
+    return json.dumps(obj, indent=indent, sort_keys=False)

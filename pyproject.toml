@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "cognis-apidiff"
-version = "0.1.1"
+version = "0.6.0"
 description = "Breaking-change detector for OpenAPI / GraphQL across commits"
 authors = [{name = "Cognis Digital", email = "suite@cognis.digital"}]
 license = {text = "LicenseRef-COCL-1.0"}

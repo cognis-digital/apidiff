@@ -9,7 +9,7 @@
 
 <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=18&duration=3500&pause=1000&color=6B46C1&center=true&vCenter=true&width=720&lines=Breakingchange+detector+for+OpenAPI++GraphQL+across+commits;Self-hostable+%C2%B7+MCP-native+%C2%B7+CI-ready+%C2%B7+polyglot" width="720"/>
 
-[![PyPI](https://img.shields.io/pypi/v/cognis-apidiff.svg?color=6b46c1)](https://pypi.org/project/cognis-apidiff/) [![CI](https://github.com/cognis-digital/apidiff/actions/workflows/ci.yml/badge.svg)](https://github.com/cognis-digital/apidiff/actions) [![License: COCL 1.0](https://img.shields.io/badge/License-COCL%201.0-2b6cb0.svg)](LICENSE) [![Suite](https://img.shields.io/badge/Cognis-Neural%20Suite-6b46c1.svg)](https://github.com/cognis-digital)
+[![PyPI](https://img.shields.io/pypi/v/cognis-apidiff.svg?color=6b46c1)](https://pypi.org/project/cognis-apidiff/) [![CI](https://github.com/cognis-digital/apidiff/actions/workflows/ci.yml/badge.svg)](https://github.com/cognis-digital/apidiff/actions) [![Ports](https://github.com/cognis-digital/apidiff/actions/workflows/ports.yml/badge.svg)](https://github.com/cognis-digital/apidiff/actions/workflows/ports.yml) [![License: COCL 1.0](https://img.shields.io/badge/License-COCL%201.0-2b6cb0.svg)](LICENSE) [![Suite](https://img.shields.io/badge/Cognis-Neural%20Suite-6b46c1.svg)](https://github.com/cognis-digital)
 
 *Developer Tools — fast, single-purpose, CI- and agent-friendly.*
 
@@ -17,57 +17,79 @@
 
 ```bash
 pip install cognis-apidiff
-apidiff scan .            # → prioritized findings in seconds
+apidiff diff openapi.old.json openapi.new.json   # → classified changes in milliseconds
 ```
+
+`apidiff` compares two versions of an API definition and tells you, with a clear
+severity (**BREAKING / WARNING / INFO**), exactly what changed and whether it
+will break existing consumers. Point it at the baseline and the candidate in
+your CI pipeline and it fails the build *before* a breaking change ships. It is
+**dependency-free**, **offline**, and **read-only** — it diffs two files; it
+never calls your API and never touches the network.
 
 ## Usage — step by step
 
 `apidiff` detects breaking changes between two OpenAPI / GraphQL definitions.
 
-1. **Install**:
+1. **Install** (either way works today):
    ```bash
-   pip install -e .
+   pip install cognis-apidiff                                       # PyPI
+   pip install "git+https://github.com/cognis-digital/apidiff.git"  # from source
    ```
 2. **Diff a baseline against a candidate** definition:
    ```bash
-   apidiff diff openapi.old.yaml openapi.new.yaml
+   apidiff diff openapi.old.json openapi.new.json
    ```
 3. **Force the format** when auto-detection is ambiguous:
    ```bash
    apidiff diff schema.old.graphql schema.new.graphql --fmt graphql
    ```
-4. **Read the output** as JSON for tooling:
+4. **Read the output** as JSON for tooling, or SARIF for code scanning:
    ```bash
-   apidiff diff openapi.old.yaml openapi.new.yaml --format json
+   apidiff diff openapi.old.json openapi.new.json --format json
+   apidiff diff openapi.old.json openapi.new.json --format sarif
    ```
 5. **Automate in CI** — `--fail-on` controls when the diff returns a non-zero exit:
    ```bash
-   apidiff diff openapi.old.yaml openapi.new.yaml --fail-on breaking
+   apidiff diff openapi.old.json openapi.new.json --fail-on breaking
    ```
+
+> **Input formats.** OpenAPI documents are read as **JSON** (OpenAPI 3.x or
+> Swagger 2.0). If your spec is YAML, convert it first — e.g.
+> `python -c "import sys,yaml,json; json.dump(yaml.safe_load(open(sys.argv[1])), open(sys.argv[2],'w'))" openapi.yaml openapi.json`
+> — then diff the JSON. GraphQL is read as **SDL** text (`.graphql`).
 
 ## Contents
 
-- [Why apidiff?](#why) · [Features](#features) · [Quick start](#quick-start) · [Example](#example) · [Demos](#demos) · [Architecture](#architecture) · [AI stack](#ai-stack) · [How it compares](#how-it-compares) · [Integrations](#integrations) · [Install anywhere](#install-anywhere) · [Related](#related) · [Contributing](#contributing)
+- [Why apidiff?](#why) · [Features](#features) · [Quick start](#quick-start) · [What counts as breaking](#breaking) · [Example](#example) · [Demos](#demos) · [Architecture](#architecture) · [AI stack](#ai-stack) · [Polyglot ports](#ports) · [How it compares](#how-it-compares) · [Integrations](#integrations) · [Install anywhere](#install-anywhere) · [Scope & safety](#scope) · [Related](#related) · [Contributing](#contributing)
 
 <a name="why"></a>
 ## Why apidiff?
 
-API teams catch breaks in CI
+A renamed field, a newly-required parameter, a dropped `2xx` response — small
+diffs that silently break every client of your API. Code review rarely catches
+them; integration tests catch them late. `apidiff` makes the contract itself the
+gate.
 
-`apidiff` is single-purpose, scriptable, and self-hostable: point it at a target, get prioritized results in the format your workflow already speaks (table · JSON · SARIF), gate CI on it, and let agents drive it over MCP.
+`apidiff` is single-purpose, scriptable, and self-hostable: point it at a
+baseline + candidate, get prioritized results in the format your workflow
+already speaks (table · JSON · SARIF), gate CI on it, and let agents drive it
+over MCP.
 
 <div align="right"><a href="#top">↑ back to top</a></div>
 
 <a name="features"></a>
 ## Features
 
-- ✅ Detects breaking changes in **OpenAPI 3.x** (JSON) and **GraphQL SDL**
-- ✅ Severity model: **BREAKING / WARNING / INFO** with stable change codes
+- ✅ Detects breaking changes in **OpenAPI 3.x / Swagger 2.0** (JSON) and **GraphQL SDL**
+- ✅ Severity model: **BREAKING / WARNING / INFO** with **stable change codes** (`path.removed`, `param.added.required`, `response.property.removed`, `enum.value.removed`, …)
 - ✅ Output as **table · JSON · SARIF 2.1.0** (GitHub code scanning)
 - ✅ CI gate via exit codes + `--fail-on breaking|warning|never`
-- ✅ Zero runtime dependencies (stdlib only)
-- ✅ Runs on Linux/macOS/Windows · Docker · devcontainer
-- ✅ Ports in Python, JavaScript, Go, and Rust (`ports/`)
+- ✅ **Zero runtime dependencies** — Python standard library only
+- ✅ **Offline & read-only** — diffs two files; no network, no live API access
+- ✅ Runs on Linux / macOS / Windows · Docker · devcontainer
+- ✅ **MCP server** (`apidiff mcp`) so AI agents can drive it
+- ✅ Verified **polyglot ports** in JavaScript, Go, and Rust (`ports/`)
 
 <div align="right"><a href="#top">↑ back to top</a></div>
 
@@ -77,11 +99,38 @@ API teams catch breaks in CI
 ```bash
 pip install cognis-apidiff
 apidiff --version
-apidiff diff openapi.old.json openapi.new.json                  # human table
-apidiff diff openapi.old.json openapi.new.json --format json    # machine-readable
-apidiff diff openapi.old.json openapi.new.json --format sarif   # code-scanning
+apidiff diff openapi.old.json openapi.new.json                     # human table
+apidiff diff openapi.old.json openapi.new.json --format json       # machine-readable
+apidiff diff openapi.old.json openapi.new.json --format sarif      # code-scanning
 apidiff diff openapi.old.json openapi.new.json --fail-on breaking  # CI gate
+apidiff diff schema.old.graphql schema.new.graphql --fmt graphql   # GraphQL SDL
 ```
+
+<div align="right"><a href="#top">↑ back to top</a></div>
+
+<a name="breaking"></a>
+## What counts as breaking
+
+apidiff classifies each change by who it hurts. A change is **BREAKING** when it
+can break an existing consumer; **WARNING** when it is risky but tolerable; and
+**INFO** when it is purely additive.
+
+| Change | OpenAPI | GraphQL | Severity |
+|---|:---:|:---:|---|
+| Endpoint / type removed | `path.removed`, `operation.removed` | `type.removed` | 🔴 BREAKING |
+| Field a client reads removed | `response.property.removed` | `field.removed` | 🔴 BREAKING |
+| New **required** input | `param.added.required`, `requestBody.required.added` | `input.field.added.required`, `arg.added.required` | 🔴 BREAKING |
+| Existing input made required | `param.required.added` | `arg.required.added` | 🔴 BREAKING |
+| Type narrowed / changed | `*.property.type.changed` | `field.type.changed` | 🔴 BREAKING |
+| Success (`2xx`) response dropped | `response.removed` | — | 🔴 BREAKING |
+| Enum value removed | — | `enum.value.removed` | 🔴 BREAKING |
+| Optional input / parameter removed | `param.removed` | `arg.type.changed` | 🟡 WARNING |
+| Enum value added | — | `enum.value.added` | 🟡 WARNING |
+| New optional field / endpoint / type | `path.added`, `param.added`, `*.property.added` | `field.added`, `arg.added`, `type.added` | 🟢 INFO |
+
+> GraphQL nullability is direction-aware: loosening an **output** field
+> (`String!` → `String`) breaks readers, while tightening an **input** field
+> (`String` → `String!`) breaks callers. apidiff scores each correctly.
 
 <div align="right"><a href="#top">↑ back to top</a></div>
 
@@ -93,10 +142,30 @@ $ apidiff diff demos/01-basic/openapi.old.json demos/01-basic/openapi.new.json
 format: openapi
 changes: 4  breaking: 3  warning: 0  info: 1
 
+  [BREAKING] DELETE /pets/{petId}  Operation 'DELETE /pets/{petId}' was removed
   [BREAKING] GET /pets             New required parameter 'tenant' (in: query) added
   [BREAKING] GET /pets             response property 'tag' was removed
-  [BREAKING] DELETE /pets/{petId}  Operation 'DELETE /pets/{petId}' was removed
   [INFO    ] /pets/{petId}/notes   Path '/pets/{petId}/notes' was added
+```
+
+The same diff as machine-readable JSON:
+
+```text
+$ apidiff diff demos/01-basic/openapi.old.json demos/01-basic/openapi.new.json --format json
+{
+  "format": "openapi",
+  "summary": { "total": 4, "breaking": 3, "warning": 0, "info": 1 },
+  "changes": [
+    { "severity": "BREAKING", "code": "operation.removed",
+      "location": "DELETE /pets/{petId}", "message": "Operation 'DELETE /pets/{petId}' was removed" },
+    { "severity": "BREAKING", "code": "param.added.required",
+      "location": "GET /pets", "message": "New required parameter 'tenant' (in: query) added" },
+    { "severity": "BREAKING", "code": "response.property.removed",
+      "location": "GET /pets", "message": "response property 'tag' was removed" },
+    { "severity": "INFO", "code": "path.added",
+      "location": "/pets/{petId}/notes", "message": "Path '/pets/{petId}/notes' was added" }
+  ]
+}
 ```
 
 The process exits **1** when breaking changes are found, so the CI step fails
@@ -110,7 +179,7 @@ before the change ships.
 Each folder under [`demos/`](demos/) is a self-contained, runnable scenario: a
 baseline + candidate definition in apidiff's real input format, plus a
 `SCENARIO.md` describing where the data came from, what to expect, the exact
-command, and how to act. Every demo is verified by the test suite.
+command, and how to act. **Every demo is verified by the test suite.**
 
 | Demo | Format | What it shows |
 |---|---|---|
@@ -138,9 +207,21 @@ python -m apidiff diff demos/02-graphql-schema/schema.old.graphql \
 
 ```mermaid
 flowchart LR
-  IN[input] --> P[apidiff<br/>analyze + score]
-  P --> OUT[report]
+  OLD[old definition] --> D[detect format]
+  NEW[new definition] --> D
+  D -->|openapi| OA[OpenAPI diff]
+  D -->|graphql| GQ[GraphQL SDL diff]
+  OA --> R[classify BREAKING / WARNING / INFO]
+  GQ --> R
+  R --> T[table]
+  R --> J[JSON]
+  R --> S[SARIF 2.1.0]
 ```
+
+The engine is one module (`apidiff/core.py`): a format detector, two diff
+walkers (OpenAPI JSON, GraphQL SDL via a stdlib subset parser), a severity
+classifier, and three renderers. No plugins, no config files, no I/O beyond
+reading the two files you name.
 
 <div align="right"><a href="#top">↑ back to top</a></div>
 
@@ -149,10 +230,30 @@ flowchart LR
 
 `apidiff` is interoperable with every popular way of using AI:
 
-- **MCP server** — `apidiff mcp` (Claude Desktop, Cursor, Cognis.Studio, [uncensored-fleet](https://github.com/cognis-digital/uncensored-fleet))
-- **OpenAI-compatible / JSON** — pipe `apidiff scan . --format json` into any agent or LLM
+- **MCP server** — `apidiff mcp` exposes an `apidiff_diff(old_path, new_path, fmt)` tool to Claude Desktop, Cursor, Cognis.Studio, and the [uncensored-fleet](https://github.com/cognis-digital/uncensored-fleet) (needs the `mcp` extra: `pip install "cognis-apidiff[mcp]"`)
+- **OpenAI-compatible / JSON** — pipe `apidiff diff old new --format json` into any agent or LLM
 - **LangChain · CrewAI · AutoGen · LlamaIndex** — wrap the CLI/JSON as a tool in one line
 - **CI / scripts** — exit codes + SARIF for non-AI pipelines
+
+<div align="right"><a href="#top">↑ back to top</a></div>
+
+<a name="ports"></a>
+## Polyglot ports — same engine, four languages
+
+Drop apidiff into any stack or ship a single static binary. Each port in
+[`ports/`](ports/) mirrors the reference CLI (`diff OLD NEW [--format
+table|json]`), emits the **same change codes** and the same exit-code contract
+(`1` on breaking, `0` clean, `2` on error), and has its own smoke test wired
+into the [`ports.yml`](.github/workflows/ports.yml) CI workflow. The JavaScript
+port is byte-for-byte verified against the Python reference across every OpenAPI
+demo.
+
+| Language | Run | Test |
+|---|---|---|
+| Python (reference) | `apidiff diff old.json new.json` | `python -m pytest` |
+| JavaScript / Node | `node ports/javascript/index.js diff old.json new.json` | `node --test ports/javascript/test.js` |
+| Go | `cd ports/go && go run . diff old.json new.json` | `go test ./...` |
+| Rust (zero crates) | `cd ports/rust && cargo run -- diff old.json new.json` | `cargo test` |
 
 <div align="right"><a href="#top">↑ back to top</a></div>
 
@@ -175,7 +276,16 @@ flowchart LR
 <a name="integrations"></a>
 ## Integrations
 
-Pipes into your stack: **SARIF** for code-scanning, **JSON** for anything, an **MCP server** (`apidiff mcp`) for AI agents, and a webhook forwarder for SIEM/Slack/Jira. See [`docs/INTEGRATIONS.md`](docs/INTEGRATIONS.md).
+Pipes into your stack: **SARIF** for code-scanning, **JSON** for anything, an
+**MCP server** (`apidiff mcp`) for AI agents, and an `apidiff-emit` forwarder
+that maps findings onto STIX / MISP / Sigma / Splunk / Elastic / Slack / webhook
+via [cognis-connect](https://github.com/cognis-digital/cognis-connect). See
+[`docs/INTEGRATIONS.md`](docs/INTEGRATIONS.md).
+
+```bash
+# forward a diff to Slack (dry-run shown; cognis-connect is an optional extra)
+apidiff diff old.json new.json --format json | apidiff-emit --to slack --url "$WEBHOOK" --dry-run
+```
 
 <div align="right"><a href="#top">↑ back to top</a></div>
 
@@ -183,8 +293,8 @@ Pipes into your stack: **SARIF** for code-scanning, **JSON** for anything, an **
 ## Install — every way, every platform
 
 ```bash
-pip install "git+https://github.com/cognis-digital/apidiff.git"    # pip (works today)
-pipx install "git+https://github.com/cognis-digital/apidiff.git"   # isolated CLI
+pip install "git+https://github.com/cognis-digital/apidiff.git"     # pip (works today)
+pipx install "git+https://github.com/cognis-digital/apidiff.git"    # isolated CLI
 uv tool install "git+https://github.com/cognis-digital/apidiff.git" # uv
 pip install cognis-apidiff                                          # PyPI (when published)
 docker run --rm ghcr.io/cognis-digital/apidiff:latest --help        # Docker
@@ -195,6 +305,32 @@ curl -fsSL https://raw.githubusercontent.com/cognis-digital/apidiff/main/install
 | Linux | macOS | Windows | Docker | Cloud |
 |---|---|---|---|---|
 | `scripts/setup-linux.sh` | `scripts/setup-macos.sh` | `scripts/setup-windows.ps1` | `docker run ghcr.io/cognis-digital/apidiff` | [DEPLOY.md](docs/DEPLOY.md) (AWS/Azure/GCP/k8s) |
+
+### Edge / air-gap
+
+apidiff has **zero runtime dependencies** and makes **no network calls** — it
+only reads the two files you hand it. That makes it ideal for air-gapped CI:
+clone once (or vendor the single `apidiff/` package), and it runs anywhere
+Python 3.10+ is present. The Go and Rust ports compile to a **single static
+binary** with no third-party crates/modules, so you can drop one executable into
+a locked-down runner with no package manager at all.
+
+<div align="right"><a href="#top">↑ back to top</a></div>
+
+<a name="scope"></a>
+## Scope & safety
+
+- **Passive and read-only.** apidiff opens two local definition files and
+  compares them. It does **not** call any API, send traffic, or perform active
+  scanning of any kind.
+- **No network.** The core has no network code path; it runs fully offline.
+  (The optional `apidiff-emit` forwarder *can* POST findings to a SIEM/Slack
+  webhook you configure, and supports `--dry-run`; this is opt-in and never runs
+  during a diff.)
+- **Defensive use.** apidiff is a developer/CI quality gate. Use it on API
+  contracts you own or are authorized to review.
+- **Deterministic.** Same inputs → same output. No fabricated data, no external
+  state.
 
 <div align="right"><a href="#top">↑ back to top</a></div>
 
@@ -215,13 +351,13 @@ curl -fsSL https://raw.githubusercontent.com/cognis-digital/apidiff/main/install
 <a name="contributing"></a>
 ## Contributing
 
-PRs, new rules, and demo scenarios are welcome under the collaboration-pull model — see [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md).
+PRs, new rules, and demo scenarios are welcome under the collaboration-pull model — see [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md). New language ports should add a smoke test wired into `ports.yml` and verify against the OpenAPI demos.
 
 > ### ⭐ If `apidiff` saved you time, **star it** — it genuinely helps others find it.
 
 ## Interoperability
 
-`{}` composes with the 300+ tool Cognis suite — JSON in/out and a shared
+`apidiff` composes with the 300+ tool Cognis suite — JSON in/out and a shared
 OpenAI-compatible `/v1` backbone. See **[INTEROP.md](INTEROP.md)** for the
 suite map, composition patterns, and reference stacks.
 
