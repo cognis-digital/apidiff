@@ -1,0 +1,3 @@
+$ apidiff-emit --version
+
+apidiff 0.6.0

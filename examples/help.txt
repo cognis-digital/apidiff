@@ -1,0 +1,14 @@
+$ apidiff-emit --help
+
+usage: apidiff [-h] [--version] {diff,mcp} ...
+
+Breaking-change detector for OpenAPI / GraphQL across commits.
+
+positional arguments:
+  {diff,mcp}
+    diff      Diff two API definitions
+    mcp       Run the MCP stdio server (requires the 'mcp' extra)
+
+options:
+  -h, --help  show this help message and exit
+  --version   show program's version number and exit

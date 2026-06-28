@@ -27,6 +27,62 @@ your CI pipeline and it fails the build *before* a breaking change ships. It is
 **dependency-free**, **offline**, and **read-only** — it diffs two files; it
 never calls your API and never touches the network.
 
+
+<!-- cognis:example:start -->
+## 🔎 Example output
+
+Real, reproducible output from the tool — runs offline:
+
+```console
+$ apidiff-emit --version
+apidiff 0.6.0
+```
+
+```console
+$ apidiff-emit --help
+usage: apidiff [-h] [--version] {diff,mcp} ...
+
+Breaking-change detector for OpenAPI / GraphQL across commits.
+
+positional arguments:
+  {diff,mcp}
+    diff      Diff two API definitions
+    mcp       Run the MCP stdio server (requires the 'mcp' extra)
+
+options:
+  -h, --help  show this help message and exit
+  --version   show program's version number and exit
+```
+
+> Blocks above are real `apidiff` output — reproduce them from a clone.
+
+**Sample result format** _(illustrative values — run on your own data for real findings):_
+
+```
+{
+"findings": [
+    {
+        "id": "123456",
+        "title": "Suspicious Network Traffic",
+        "description": "Potential malicious activity detected on port 443",
+        "severity": "medium",
+        "labels": ["network", "traffic"],
+        "created_at": "2023-02-15T14:30:00Z"
+    },
+    {
+        "id": "789012",
+        "title": "Unusual File Access",
+        "description": "User accessed a file with unusual permissions",
+        "severity": "high",
+        "labels": ["file", "access"],
+        "created_at": "2023-02-15T14:31:00Z"
+    }
+]
+}
+```
+
+<!-- cognis:example:end -->
+
 ## Usage — step by step
 
 `apidiff` detects breaking changes between two OpenAPI / GraphQL definitions.
