@@ -1,0 +1,18 @@
+[2026-07-09 21:37:49] === enhance · apidiff · words=120000 loc>=10000 langs=9 push=True ===
+[2026-07-09 21:37:54] phase DOCS — longform 120000-word corpus -> docs/corpus/
+[2026-07-10 07:26:51] phase POLYGLOT — expanding to >= 10000 LOC across 9 languages
+[2026-07-10 07:27:20]   facets: ['spec_parser', 'schema_normalizer', 'diff_engine', 'impact_analyzer', 'report_generator', 'cli_interface']
+[2026-07-10 07:29:19]   +polyglot/python/spec_parser.py  (loc now ~3858)
+[2026-07-10 07:31:18]   +polyglot/go/spec_parser.go  (loc now ~4459)
+[2026-07-10 07:35:33]   +polyglot/typescript/spec_parser.ts  (loc now ~4992)
+[2026-07-10 07:37:39]   +polyglot/c/spec_parser.c  (loc now ~5439)
+[2026-07-10 07:39:53]   +polyglot/cpp/spec_parser.cpp  (loc now ~5912)
+[2026-07-10 07:41:52]   +polyglot/java/spec_parser.java  (loc now ~6389)
+[2026-07-10 07:44:08]   +polyglot/ruby/spec_parser.rb  (loc now ~6885)
+[2026-07-10 07:46:07]   +polyglot/csharp/spec_parser.cs  (loc now ~7320)
+[2026-07-10 07:48:24]   +polyglot/python/schema_normalizer.py  (loc now ~7791)
+[2026-07-10 07:52:23]   +polyglot/rust/schema_normalizer.rs  (loc now ~8267)
+[2026-07-10 07:54:39]   +polyglot/typescript/schema_normalizer.ts  (loc now ~8798)
+[2026-07-10 07:56:38]   +polyglot/c/schema_normalizer.c  (loc now ~9300)
+[2026-07-10 07:58:54]   +polyglot/cpp/schema_normalizer.cpp  (loc now ~9795)
+[2026-07-10 08:00:16]   +polyglot/java/schema_normalizer.java  (loc now ~10168)
