@@ -1,8 +1,10 @@
 """Command-line interface for APIDIFF.
 
 Usage:
-    apidiff diff OLD NEW [--format table|json|sarif] [--fmt auto|openapi|graphql]
+    apidiff diff OLD NEW [--format table|json|sarif|markdown|junit]
+                         [--fmt auto|openapi|graphql]
                          [--fail-on breaking|warning|never]
+                         [--ignore-code CODE ...] [--output FILE]
     apidiff mcp          # run the MCP stdio server (needs the 'mcp' extra)
     apidiff --version
 
@@ -19,7 +21,7 @@ import sys
 from typing import List, Optional
 
 from . import TOOL_NAME, TOOL_VERSION
-from .core import DiffResult, Severity, diff_files
+from .core import SEVERITY_ORDER, DiffResult, diff_files
 
 
 def _read(path: str) -> str:
@@ -40,10 +42,9 @@ def _render_table(result: DiffResult) -> str:
         lines.append("No changes detected.")
         return "\n".join(lines)
 
-    order = {Severity.BREAKING: 0, Severity.WARNING: 1, Severity.INFO: 2}
     width = max(len(c.location) for c in result.changes)
     width = min(max(width, 8), 48)
-    for c in sorted(result.changes, key=lambda x: order[x.severity]):
+    for c in sorted(result.changes, key=lambda x: SEVERITY_ORDER[x.severity]):
         loc = c.location if len(c.location) <= width else c.location[: width - 1] + "…"
         lines.append(f"  [{c.severity.value:<8}] {loc:<{width}}  {c.message}")
     return "\n".join(lines)
@@ -63,14 +64,22 @@ def build_parser() -> argparse.ArgumentParser:
     d = sub.add_parser("diff", help="Diff two API definitions")
     d.add_argument("old", help="Path to the OLD (baseline) API definition")
     d.add_argument("new", help="Path to the NEW (candidate) API definition")
-    d.add_argument("--format", choices=("table", "json", "sarif"),
+    d.add_argument("--format",
+                   choices=("table", "json", "sarif", "markdown", "junit"),
                    default="table",
-                   help="Output format: table | json | sarif (default: table)")
+                   help="Output format: table | json | sarif | markdown | junit "
+                        "(default: table)")
     d.add_argument("--fmt", choices=("auto", "openapi", "graphql"),
                    default="auto", help="Input API format (default: auto-detect)")
     d.add_argument("--fail-on", choices=("breaking", "warning", "never"),
                    default="breaking",
                    help="Severity threshold that yields a non-zero exit")
+    d.add_argument("--ignore-code", action="append", default=None,
+                   metavar="CODE", dest="ignore_code",
+                   help="Suppress a change code (repeatable); affects output "
+                        "and the exit code. E.g. --ignore-code enum.value.added")
+    d.add_argument("--output", "-o", default=None, metavar="FILE",
+                   help="Write the report to FILE instead of stdout")
 
     sub.add_parser(
         "mcp",
@@ -111,13 +120,30 @@ def main(argv: Optional[List[str]] = None) -> int:
         print(f"error: failed to diff: {e}", file=sys.stderr)
         return 2
 
+    if getattr(args, "ignore_code", None):
+        result = result.filtered(args.ignore_code)
+
     if args.format == "json":
-        print(json.dumps(result.to_dict(), indent=2))
+        rendered = json.dumps(result.to_dict(), indent=2)
     elif args.format == "sarif":
-        print(json.dumps(
-            result.to_sarif(TOOL_NAME, TOOL_VERSION), indent=2))
+        rendered = json.dumps(result.to_sarif(TOOL_NAME, TOOL_VERSION), indent=2)
+    elif args.format == "markdown":
+        rendered = result.to_markdown()
+    elif args.format == "junit":
+        rendered = result.to_junit(TOOL_NAME)
     else:
-        print(_render_table(result))
+        rendered = _render_table(result)
+
+    out_path = getattr(args, "output", None)
+    if out_path:
+        try:
+            with open(out_path, "w", encoding="utf-8", newline="\n") as fh:
+                fh.write(rendered if rendered.endswith("\n") else rendered + "\n")
+        except OSError as e:
+            print(f"error: {e}", file=sys.stderr)
+            return 2
+    else:
+        print(rendered)
 
     return _exit_code(result, args.fail_on)
 

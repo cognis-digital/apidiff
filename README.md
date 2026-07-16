@@ -100,14 +100,29 @@ options:
    ```bash
    apidiff diff schema.old.graphql schema.new.graphql --fmt graphql
    ```
-4. **Read the output** as JSON for tooling, or SARIF for code scanning:
+4. **Read the output** in the format your workflow speaks — JSON for tooling,
+   SARIF for code scanning, Markdown for PR comments, or JUnit XML for test
+   dashboards:
    ```bash
    apidiff diff openapi.old.json openapi.new.json --format json
    apidiff diff openapi.old.json openapi.new.json --format sarif
+   apidiff diff openapi.old.json openapi.new.json --format markdown
+   apidiff diff openapi.old.json openapi.new.json --format junit
    ```
 5. **Automate in CI** — `--fail-on` controls when the diff returns a non-zero exit:
    ```bash
    apidiff diff openapi.old.json openapi.new.json --fail-on breaking
+   ```
+6. **Acknowledge an intentionally-accepted change** so it stops failing the
+   build (repeat the flag for several codes) — the ignored code is dropped from
+   the report *and* from the exit-code decision:
+   ```bash
+   apidiff diff openapi.old.json openapi.new.json --ignore-code enum.value.added
+   ```
+7. **Write the report to a file** (e.g. to upload as a PR comment or CI artifact):
+   ```bash
+   apidiff diff openapi.old.json openapi.new.json --format markdown -o apidiff.md
+   apidiff diff openapi.old.json openapi.new.json --format junit    -o apidiff.xml
    ```
 
 > **Input formats.** OpenAPI documents are read as **JSON** (OpenAPI 3.x or
@@ -117,7 +132,7 @@ options:
 
 ## Contents
 
-- [Why apidiff?](#why) · [Features](#features) · [Quick start](#quick-start) · [What counts as breaking](#breaking) · [Example](#example) · [Demos](#demos) · [Architecture](#architecture) · [AI stack](#ai-stack) · [Polyglot ports](#ports) · [How it compares](#how-it-compares) · [Integrations](#integrations) · [Install anywhere](#install-anywhere) · [Scope & safety](#scope) · [Related](#related) · [Contributing](#contributing)
+- [Why apidiff?](#why) · [Features](#features) · [Quick start](#quick-start) · [What counts as breaking](#breaking) · [Example](#example) · [Demos](#demos) · [Architecture](#architecture) · [AI stack](#ai-stack) · [Polyglot ports](#ports) · [How it compares](#how-it-compares) · [Integrations](#integrations) · [Install anywhere](#install-anywhere) · [Scope & safety](#scope) · [FAQ](#faq) · [Related](#related) · [Contributing](#contributing)
 
 <a name="why"></a>
 ## Why apidiff?
@@ -139,8 +154,10 @@ over MCP.
 
 - ✅ Detects breaking changes in **OpenAPI 3.x / Swagger 2.0** (JSON) and **GraphQL SDL**
 - ✅ Severity model: **BREAKING / WARNING / INFO** with **stable change codes** (`path.removed`, `param.added.required`, `response.property.removed`, `enum.value.removed`, …)
-- ✅ Output as **table · JSON · SARIF 2.1.0** (GitHub code scanning)
+- ✅ Output as **table · JSON · SARIF 2.1.0 · Markdown · JUnit XML** — for humans, code scanning, PR comments, and test dashboards
 - ✅ CI gate via exit codes + `--fail-on breaking|warning|never`
+- ✅ **Acknowledge accepted changes** with `--ignore-code CODE` (repeatable) — suppress a specific change from the report *and* the exit code
+- ✅ **Write to a file** with `--output FILE` (`-o`) for artifacts and PR-comment upload
 - ✅ **Zero runtime dependencies** — Python standard library only
 - ✅ **Offline & read-only** — diffs two files; no network, no live API access
 - ✅ Runs on Linux / macOS / Windows · Docker · devcontainer
@@ -227,6 +244,32 @@ $ apidiff diff demos/01-basic/openapi.old.json demos/01-basic/openapi.new.json -
 The process exits **1** when breaking changes are found, so the CI step fails
 before the change ships.
 
+The same diff as a **Markdown** report you can drop straight into a PR comment
+(`--format markdown`):
+
+```markdown
+## API diff
+
+**🔴 Breaking changes detected** — format `openapi`
+
+| Severity | Count |
+| --- | ---: |
+| 🔴 BREAKING | 3 |
+| 🟡 WARNING | 0 |
+| 🟢 INFO | 1 |
+| **Total** | **4** |
+
+| Severity | Code | Location | Message |
+| --- | --- | --- | --- |
+| 🔴 BREAKING | `operation.removed` | `DELETE /pets/{petId}` | Operation 'DELETE /pets/{petId}' was removed |
+| 🔴 BREAKING | `param.added.required` | `GET /pets` | New required parameter 'tenant' (in: query) added |
+| 🔴 BREAKING | `response.property.removed` | `GET /pets` | response property 'tag' was removed |
+| 🟢 INFO | `path.added` | `/pets/{petId}/notes` | Path '/pets/{petId}/notes' was added |
+```
+
+Or as **JUnit XML** (`--format junit`) for a test dashboard — each breaking change
+becomes a `<failure>`, so the report is red exactly when the diff is breaking.
+
 <div align="right"><a href="#top">↑ back to top</a></div>
 
 <a name="demos"></a>
@@ -272,12 +315,16 @@ flowchart LR
   R --> T[table]
   R --> J[JSON]
   R --> S[SARIF 2.1.0]
+  R --> M[Markdown]
+  R --> U[JUnit XML]
 ```
 
 The engine is one module (`apidiff/core.py`): a format detector, two diff
 walkers (OpenAPI JSON, GraphQL SDL via a stdlib subset parser), a severity
-classifier, and three renderers. No plugins, no config files, no I/O beyond
-reading the two files you name.
+classifier, and five renderers (table, JSON, SARIF 2.1.0, Markdown, JUnit XML).
+No plugins, no config files, no I/O beyond reading the two files you name (and,
+optionally, writing the report to the `--output` path you choose). See
+[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) and [`docs/USAGE.md`](docs/USAGE.md).
 
 <div align="right"><a href="#top">↑ back to top</a></div>
 
@@ -401,6 +448,40 @@ a locked-down runner with no package manager at all.
 - [`licenselens`](https://github.com/cognis-digital/licenselens) — Dependency license + SBOM gate, developer-CLI first
 
 **Explore the suite →** [🗂️ all 170+ tools](https://github.com/cognis-digital/cognis-neural-suite) · [⭐ awesome-cognis](https://github.com/cognis-digital/awesome-cognis) · [🔗 cognis-sources](https://github.com/cognis-digital/cognis-sources) · [🤖 uncensored-fleet](https://github.com/cognis-digital/uncensored-fleet) · [🧠 engram](https://github.com/cognis-digital/engram)
+
+<div align="right"><a href="#top">↑ back to top</a></div>
+
+<a name="faq"></a>
+## FAQ
+
+**Does apidiff call my running API?**
+No. It is passive, read-only, and offline — it opens the two definition files you
+name and compares them. The only optional write is `--output`, and the only
+optional network is the separate opt-in `apidiff-emit` forwarder.
+
+**My spec is YAML — is that supported?**
+OpenAPI is read as JSON. Convert YAML → JSON first (see the note under
+[Usage](#usage)), then diff the JSON. GraphQL is read as SDL text directly.
+
+**How do I use it as a CI gate?**
+Run `apidiff diff base new --fail-on breaking`. It exits `1` when a breaking
+change is found (`0` clean, `2` on error), which fails the step. Add
+`--format markdown -o apidiff.md` to attach a human summary, or `--format junit`
+for a test dashboard. See [`docs/USAGE.md`](docs/USAGE.md) for copy-paste CI recipes.
+
+**A change is intentional and coordinated — how do I stop it failing the build?**
+Suppress its change code: `--ignore-code CODE` (repeatable). The code is dropped
+from the report and from the exit-code decision; every other check still gates.
+
+**What exactly counts as breaking?**
+See [What counts as breaking](#breaking). Change codes are stable and safe to
+match on. GraphQL nullability is direction-aware (output loosening vs input
+tightening).
+
+**Which output format should I pick?**
+`table` for humans, `json` for tooling/agents, `sarif` for code scanning,
+`markdown` for PR comments, `junit` for test dashboards. All are produced from
+the same classified result, so they always agree.
 
 <div align="right"><a href="#top">↑ back to top</a></div>
 

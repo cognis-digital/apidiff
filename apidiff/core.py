@@ -16,7 +16,8 @@ import os
 import re
 from dataclasses import dataclass, field, asdict
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Tuple
+from xml.sax.saxutils import escape as _xml_escape, quoteattr as _xml_quoteattr
 
 # --------------------------------------------------------------------------
 # Tool identity (single source of truth; mirrored by apidiff.__init__)
@@ -48,6 +49,21 @@ class Severity(str, Enum):
     BREAKING = "BREAKING"
     WARNING = "WARNING"
     INFO = "INFO"
+
+
+# Stable presentation order (most severe first) reused by every renderer.
+SEVERITY_ORDER: Dict["Severity", int] = {
+    Severity.BREAKING: 0,
+    Severity.WARNING: 1,
+    Severity.INFO: 2,
+}
+
+# Emoji markers used by the human-readable Markdown renderer.
+SEVERITY_ICON: Dict["Severity", str] = {
+    Severity.BREAKING: "\U0001F534",  # red circle
+    Severity.WARNING: "\U0001F7E1",   # yellow circle
+    Severity.INFO: "\U0001F7E2",      # green circle
+}
 
 
 @dataclass
@@ -157,6 +173,124 @@ class DiffResult:
                 "results": results,
             }],
         }
+
+    # ------------------------------------------------------------------
+    # Additional renderers (additive; the JSON/SARIF/table paths are
+    # unchanged and remain the canonical outputs).
+    # ------------------------------------------------------------------
+    def sorted_changes(self) -> List["Change"]:
+        """Return changes ordered most-severe first, stable within a severity.
+
+        The original insertion order is preserved among changes that share a
+        severity, which keeps output deterministic for a given input pair.
+        """
+        return sorted(
+            self.changes,
+            key=lambda c: SEVERITY_ORDER.get(c.severity, 99),
+        )
+
+    def filtered(self, ignore_codes: Iterable[str]) -> "DiffResult":
+        """Return a copy of this result with the given change ``code``s removed.
+
+        This powers ``--ignore-code`` so teams can acknowledge specific,
+        intentionally-accepted changes (e.g. a deprecated field they already
+        removed downstream) without muting the whole check. The receiver is not
+        mutated; a fresh :class:`DiffResult` is returned. Passing an empty or
+        ``None`` iterable yields an equivalent copy.
+        """
+        ignore = {code for code in (ignore_codes or ())}
+        clone = DiffResult(api_format=self.api_format)
+        clone.changes = [c for c in self.changes if c.code not in ignore]
+        return clone
+
+    def to_markdown(self, title: str = "API diff") -> str:
+        """Render the diff as GitHub-flavoured Markdown for PR comments.
+
+        Produces a verdict line, a severity-count table, and a per-change
+        table sorted most-severe first. Pipe characters inside messages and
+        locations are escaped so the tables never break.
+        """
+        s = self.to_dict()["summary"]
+        if s["breaking"]:
+            verdict = f"{SEVERITY_ICON[Severity.BREAKING]} Breaking changes detected"
+        elif s["warning"]:
+            verdict = f"{SEVERITY_ICON[Severity.WARNING]} Non-breaking changes (warnings)"
+        else:
+            verdict = f"{SEVERITY_ICON[Severity.INFO]} No breaking changes"
+
+        lines: List[str] = [
+            f"## {title}",
+            "",
+            f"**{verdict}** — format `{self.api_format}`",
+            "",
+            "| Severity | Count |",
+            "| --- | ---: |",
+            f"| {SEVERITY_ICON[Severity.BREAKING]} BREAKING | {s['breaking']} |",
+            f"| {SEVERITY_ICON[Severity.WARNING]} WARNING | {s['warning']} |",
+            f"| {SEVERITY_ICON[Severity.INFO]} INFO | {s['info']} |",
+            f"| **Total** | **{s['total']}** |",
+            "",
+        ]
+        if not self.changes:
+            lines.append("_No changes detected._")
+            return "\n".join(lines) + "\n"
+
+        lines.append("| Severity | Code | Location | Message |")
+        lines.append("| --- | --- | --- | --- |")
+        for c in self.sorted_changes():
+            loc = c.location.replace("|", "\\|")
+            msg = c.message.replace("|", "\\|")
+            lines.append(
+                f"| {SEVERITY_ICON[c.severity]} {c.severity.value} "
+                f"| `{c.code}` | `{loc}` | {msg} |"
+            )
+        return "\n".join(lines) + "\n"
+
+    def to_junit(self, suite_name: str = "apidiff") -> str:
+        """Render the diff as a JUnit XML report for CI test-result ingestion.
+
+        Each change becomes a ``<testcase>``; every BREAKING change is emitted
+        as a ``<failure>`` so standard JUnit consumers (CI dashboards, test
+        reporters) surface a red result exactly when the diff is breaking.
+        WARNING/INFO changes are recorded as passing cases carrying their text
+        in ``<system-out>``. An empty diff yields a single passing case.
+        """
+        failures = sum(1 for c in self.changes if c.severity == Severity.BREAKING)
+        total = max(len(self.changes), 1)
+        cases: List[str] = []
+        for c in self.changes:
+            name = _xml_quoteattr(f"{c.code} @ {c.location}")
+            classname = _xml_quoteattr(f"{self.api_format}.{c.code}")
+            if c.severity == Severity.BREAKING:
+                fail = (
+                    f"<failure message={_xml_quoteattr(c.message)} "
+                    f'type="BREAKING">{_xml_escape(c.message)}</failure>'
+                )
+                cases.append(
+                    f"    <testcase name={name} classname={classname}>"
+                    f"{fail}</testcase>"
+                )
+            else:
+                out = _xml_escape(f"{c.severity.value}: {c.message}")
+                cases.append(
+                    f"    <testcase name={name} classname={classname}>"
+                    f"<system-out>{out}</system-out></testcase>"
+                )
+        if not self.changes:
+            cases.append(
+                f"    <testcase name=\"no-changes\" "
+                f"classname={_xml_quoteattr(self.api_format)}/>"
+            )
+        parts = [
+            '<?xml version="1.0" encoding="UTF-8"?>',
+            f'<testsuites tests="{total}" failures="{failures}">',
+            f"  <testsuite name={_xml_quoteattr(suite_name)} "
+            f'tests="{total}" failures="{failures}">',
+            *cases,
+            "  </testsuite>",
+            "</testsuites>",
+        ]
+        return "\n".join(parts) + "\n"
 
 
 # --------------------------------------------------------------------------
@@ -381,7 +515,6 @@ def _parse_graphql(text: str) -> Dict[str, GQLType]:
     text = re.sub(r"#[^\n]*", "", text)
     types: Dict[str, GQLType] = {}
 
-    i = 0
     for m in _TYPE_HEADER.finditer(text):
         kind, name = m.group(1), m.group(2)
         if kind == "union":
