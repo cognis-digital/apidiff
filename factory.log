@@ -16,3 +16,8 @@
 [2026-07-10 07:56:38]   +polyglot/c/schema_normalizer.c  (loc now ~9300)
 [2026-07-10 07:58:54]   +polyglot/cpp/schema_normalizer.cpp  (loc now ~9795)
 [2026-07-10 08:00:16]   +polyglot/java/schema_normalizer.java  (loc now ~10168)
+[2026-07-10 08:00:21] === done · apidiff · loc=10168 · {'committed': True, 'pushed': True, 'push_err': ''} ===
+[2026-08-30 19:04:10] === enhance · apidiff · words=120000 loc>=10000 langs=9 push=True ===
+[2026-08-30 19:04:15] phase DOCS — longform 120000-word corpus -> docs/corpus/
+[2026-08-31 03:56:50] phase POLYGLOT — expanding to >= 10000 LOC across 9 languages
+[2026-08-31 04:12:18]   facets: ['schema_parser', 'schema_normalizer', 'schema_diff', 'breaking_classifier', 'report_generator', 'cli_runner']
